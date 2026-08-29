@@ -1,7 +1,7 @@
 services:
   - type: web
     name: secure-a-fence-backend-server
-    env: node
+    runtime: node
     plan: free
     buildCommand: npm install
     startCommand: node server.js
