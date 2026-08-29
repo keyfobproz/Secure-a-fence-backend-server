@@ -3,5 +3,6 @@ services:
     name: secure-a-fence-backend-server
     runtime: node
     plan: free
+    nodeVersion: 20.11.0
     buildCommand: npm install
     startCommand: node server.js
