@@ -6,33 +6,43 @@ app.use(cors());
 app.use(express.json());
 
 // In-memory data store for simulation
+let customers = [
+  {
+    id: "cust-1",
+    name: "John Builder",
+    email: "john@apexconstruction.com",
+    role: "customer",
+    company: "Apex Construction Services",
+    phone: "(555) 234-5678"
+  }
+];
+
 let orders = [
   {
     id: "ORD-101",
-    customerId: "CUST-1",
-    customerName: "Jane Smith",
-    customerCompany: "Apex Construction",
-    customerEmail: "jane@apex.com",
-    customerPhone: "555-4321",
+    customerId: "cust-1",
+    customerName: "John Builder",
+    customerCompany: "Apex Construction Services",
+    customerEmail: "john@apexconstruction.com",
+    customerPhone: "(555) 234-5678",
     orderType: "sale",
     items: [
       {
-        productId: "PROD-1",
-        name: "Chainlink Fence Panel 6ft",
-        unitPrice: 50.0,
+        productId: "prod-panel-6x12",
+        name: "Refurbished Temporary Fence Panel (6' x 12')",
+        unitPrice: 65.0,
         quantity: 20,
-        total: 1000.0
+        total: 1300.0
       }
     ],
-    subtotal: 1000.0,
-    deliveryFee: 100.0,
-    tax: 80.0,
-    totalAmount: 1180.0,
-    status: "completed",
-    deliveryAddress: "456 Construction Rd",
-    jobsiteContact: "Jane (555-4321)",
-    deliveryDate: "2026-08-30",
-    createdAt: "2026-08-25"
+    subtotal: 1300.0,
+    deliveryFee: 150.0,
+    tax: 104.0,
+    totalAmount: 1554.0,
+    status: "pending",
+    deliveryAddress: "742 Evergreen Terrace, Jobsite Alpha",
+    deliveryDate: "2026-09-10",
+    createdAt: "2026-08-29"
   }
 ];
 
@@ -40,24 +50,24 @@ let rentals = [
   {
     id: "RNT-501",
     orderId: "ORD-101",
-    customerId: "CUST-1",
-    customerName: "Jane Smith",
-    customerCompany: "Apex Construction",
-    customerEmail: "jane@apex.com",
-    customerPhone: "555-4321",
-    jobsiteAddress: "456 Construction Rd",
-    jobsiteContact: "Jane",
+    customerId: "cust-1",
+    customerName: "John Builder",
+    customerCompany: "Apex Construction Services",
+    customerEmail: "john@apexconstruction.com",
+    customerPhone: "(555) 234-5678",
+    jobsiteAddress: "123 Construction Rd",
+    jobsiteContact: "John Builder",
     startDate: "2026-08-01",
     endDate: "2026-11-01",
     monthlyRateTotal: 600.0,
     status: "active",
     items: [
       {
-        productId: "PROD-1",
-        name: "Chainlink Fence Panel 6ft",
+        productId: "prod-panel-6x12",
+        name: "Refurbished Temporary Fence Panel (6' x 12')",
         quantity: 10,
-        monthlyUnitPrice: 60.0,
-        subtotal: 600.0
+        monthlyUnitPrice: 15.0,
+        subtotal: 150.0
       }
     ],
     notes: "Gate key in lockbox"
@@ -72,7 +82,7 @@ let shipments = [
     driverName: "Alex Turner",
     dispatchDate: "2026-08-30",
     status: "scheduled",
-    destination: "456 Construction Rd",
+    destination: "742 Evergreen Terrace, Jobsite Alpha",
     notes: "Deliver before noon"
   }
 ];
@@ -212,6 +222,21 @@ app.post('/api/admin/invoices', authenticateToken, (req, res) => {
   };
   invoices.push(newInvoice);
   res.status(201).json({ success: true, invoice: newInvoice });
+});
+
+// 7. Customers / Logins Creation
+app.get('/api/admin/customers', authenticateToken, (req, res) => {
+  res.json(customers);
+});
+
+app.post('/api/admin/customers', authenticateToken, (req, res) => {
+  const newCustomer = {
+    id: "cust-" + (customers.length + 101),
+    ...req.body,
+    role: "customer"
+  };
+  customers.push(newCustomer);
+  res.status(201).json({ success: true, customer: newCustomer });
 });
 
 const PORT = process.env.PORT || 3000;
