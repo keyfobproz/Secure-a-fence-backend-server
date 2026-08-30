@@ -91,6 +91,8 @@ let invoices = [];
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
+  console.log("Request URL:", req.url);
+  console.log("Auth Header:", req.headers["authorization"]);
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: "Unauthorized" });
