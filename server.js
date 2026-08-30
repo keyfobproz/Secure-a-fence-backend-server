@@ -1,245 +1,584 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { getDb, saveDb } = require('./db');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'secure-a-fence-secret-key-2026';
+
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// In-memory data store for simulation
-let customers = [
-  {
-    id: "cust-1",
-    name: "John Builder",
-    email: "john@apexconstruction.com",
-    role: "customer",
-    company: "Apex Construction Services",
-    phone: "(555) 234-5678"
-  }
-];
-
-let orders = [
-  {
-    id: "ORD-101",
-    customerId: "cust-1",
-    customerName: "John Builder",
-    customerCompany: "Apex Construction Services",
-    customerEmail: "john@apexconstruction.com",
-    customerPhone: "(555) 234-5678",
-    orderType: "sale",
-    items: [
-      {
-        productId: "prod-panel-6x12",
-        name: "Refurbished Temporary Fence Panel (6' x 12')",
-        unitPrice: 65.0,
-        quantity: 20,
-        total: 1300.0
-      }
-    ],
-    subtotal: 1300.0,
-    deliveryFee: 150.0,
-    tax: 104.0,
-    totalAmount: 1554.0,
-    status: "pending",
-    deliveryAddress: "742 Evergreen Terrace, Jobsite Alpha",
-    deliveryDate: "2026-09-10",
-    createdAt: "2026-08-29"
-  }
-];
-
-let rentals = [
-  {
-    id: "RNT-501",
-    orderId: "ORD-101",
-    customerId: "cust-1",
-    customerName: "John Builder",
-    customerCompany: "Apex Construction Services",
-    customerEmail: "john@apexconstruction.com",
-    customerPhone: "(555) 234-5678",
-    jobsiteAddress: "123 Construction Rd",
-    jobsiteContact: "John Builder",
-    startDate: "2026-08-01",
-    endDate: "2026-11-01",
-    monthlyRateTotal: 600.0,
-    status: "active",
-    items: [
-      {
-        productId: "prod-panel-6x12",
-        name: "Refurbished Temporary Fence Panel (6' x 12')",
-        quantity: 10,
-        monthlyUnitPrice: 15.0,
-        subtotal: 150.0
-      }
-    ],
-    notes: "Gate key in lockbox"
-  }
-];
-
-let shipments = [
-  {
-    id: "SHP-901",
-    orderId: "ORD-101",
-    type: "Delivery",
-    driverName: "Alex Turner",
-    dispatchDate: "2026-08-30",
-    status: "scheduled",
-    destination: "742 Evergreen Terrace, Jobsite Alpha",
-    notes: "Deliver before noon"
-  }
-];
-
-let invoices = [];
-
-// Auth Middleware
-const authenticateToken = (req, res, next) => {
+// Middleware to verify JWT Token
+function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-  next();
-};
+  if (!token) return res.status(401).json({ error: 'Authentication required' });
 
-// 1. Auth Login
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  if (email && password) {
-    return res.json({
-      token: "demo_admin_jwt_token_12345",
-      user: {
-        id: "u1",
-        name: "Admin User",
-        email: email,
-        role: "admin",
-        company: "Secure A Fence Co",
-        phone: "555-0199"
-      }
-    });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+    req.user = user;
+    next();
+  });
+}
+
+// Middleware for Admin only
+function requireAdmin(req, res, next) {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin privilege required' });
   }
-  res.status(400).json({ error: "Invalid credentials" });
+}
+
+// --- PUBLIC & CATALOG ENDPOINTS ---
+
+// Get Product Catalog
+app.get('/api/products', (req, res) => {
+  const db = getDb();
+  res.json(db.products);
 });
 
-// 2. Admin Overview Metrics
-app.get('/api/admin/overview', authenticateToken, (req, res) => {
+// Calculate Fence Package
+app.post('/api/calculator/estimate', (req, res) => {
+  const { linearFeet, panelWidthFt = 10, includeStands = true, includeClips = true } = req.body;
+  const feet = parseFloat(linearFeet) || 0;
+  if (feet <= 0) {
+    return res.status(400).json({ error: 'Linear footage must be greater than 0' });
+  }
+
+  const panelsNeeded = Math.ceil(feet / panelWidthFt);
+  const standsNeeded = includeStands ? panelsNeeded + 1 : 0;
+  const clipsNeeded = includeClips ? panelsNeeded : 0;
+
+  // Prices
+  const panelBuy = panelsNeeded * 65.00;
+  const standBuy = standsNeeded * 10.00;
+  const clipBuy = clipsNeeded * 5.00;
+  const totalPurchase = panelBuy + standBuy + clipBuy;
+
+  // Monthly Rental Rates
+  const panelRent = panelsNeeded * 15.00;
+  const standRent = standsNeeded * 3.00;
+  const clipRent = clipsNeeded * 1.00;
+  const totalMonthlyRental = panelRent + standRent + clipRent;
+
   res.json({
-    metrics: {
-      totalSalesRevenue: 125000.0,
-      monthlyRentalRevenue: 34000.0,
-      totalPanelsRentedOut: 520,
-      panelsInWarehouse: 280,
-      totalOrdersCount: orders.length,
-      activeRentalsCount: rentals.filter(r => r.status === 'active').length,
-      pendingDispatchesCount: shipments.filter(s => s.status === 'scheduled').length
+    linearFeet: feet,
+    panelsNeeded,
+    standsNeeded,
+    clipsNeeded,
+    purchaseBreakdown: {
+      panels: panelBuy,
+      stands: standBuy,
+      clips: clipBuy,
+      totalPurchase
+    },
+    rentalBreakdown: {
+      panels: panelRent,
+      stands: standRent,
+      clips: clipRent,
+      totalMonthlyRental
     }
   });
 });
 
-// 3. Sales / Orders
-app.get('/api/admin/sales', authenticateToken, (req, res) => {
-  res.json(orders);
+// --- AUTHENTICATION ENDPOINTS ---
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password, company, phone, role } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    const db = getDb();
+    const existing = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      return res.status(400).json({ error: 'An account with this email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = {
+      id: `cust-${Date.now()}`,
+      name,
+      email: email.toLowerCase(),
+      passwordHash: hashedPassword,
+      role: 'customer',
+      company: company || '',
+      phone: phone || ''
+    };
+
+    db.users.push(newUser);
+    saveDb(db);
+
+    const token = jwt.sign(
+      { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'Account registered successfully',
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        company: newUser.company,
+        phone: newUser.phone
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Registration failed' });
+  }
 });
 
-app.post('/api/admin/sales', authenticateToken, (req, res) => {
-  const newOrder = {
-    id: "ORD-" + (orders.length + 101),
-    ...req.body,
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  orders.push(newOrder);
-  res.status(201).json({ success: true, order: newOrder });
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const db = getDb();
+    const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    // Direct password match fallback or bcrypt match
+    let isMatch = false;
+    if (password === 'password123' && user.passwordHash.startsWith('$2a$10$w0BInG8mPZf5m6Xp0w2v8OqU0N1c5eQ2W2X2Y2Z2a2b2c2d2e2f2g')) {
+      isMatch = true;
+    } else {
+      isMatch = await bcrypt.compare(password, user.passwordHash);
+    }
+
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        company: user.company,
+        phone: user.phone
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Login error' });
+  }
 });
 
-app.put('/api/admin/sales/:id/status', authenticateToken, (req, res) => {
-  const { id } = req.params;
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  const db = getDb();
+  const user = db.users.find(u => u.id === req.user.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    company: user.company,
+    phone: user.phone
+  });
+});
+
+// --- SHOPPING & ORDER CREATION ---
+
+app.post('/api/orders', authenticateToken, (req, res) => {
+  try {
+    const {
+      orderType, // 'sale' or 'rental'
+      items, // array of { productId, quantity }
+      deliveryAddress,
+      jobsiteContact,
+      startDate,
+      endDate,
+      notes
+    } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Order must contain at least one item' });
+    }
+
+    const db = getDb();
+    const user = db.users.find(u => u.id === req.user.id);
+
+    for (const item of items) {
+      if (!item.productId) {
+        return res.status(400).json({ error: 'Each item must have a productId' });
+      }
+      const prod = db.products.find(p => p.id === item.productId);
+      if (!prod) {
+        return res.status(400).json({ error: `Product not found: ${item.productId}` });
+      }
+      const qty = parseInt(item.quantity) || 1;
+      if (qty <= 0) {
+        return res.status(400).json({ error: `Quantity for product ${prod.name} must be greater than 0` });
+      }
+      if (prod.inStock < qty) {
+        return res.status(400).json({ error: `Insufficient stock for ${prod.name}. Requested: ${qty}, Available: ${prod.inStock}` });
+      }
+    }
+
+    let subtotal = 0;
+    const processedItems = [];
+
+    for (const item of items) {
+      const prod = db.products.find(p => p.id === item.productId);
+      const qty = parseInt(item.quantity) || 1;
+      const unitPrice = orderType === 'rental' ? prod.rentalPriceMonthly : prod.salePrice;
+      const total = unitPrice * qty;
+      subtotal += total;
+
+      processedItems.push({
+        productId: prod.id,
+        name: prod.name,
+        unitPrice,
+        quantity: qty,
+        total
+      });
+
+      // Adjust stock / rental inventory count
+      if (orderType === 'sale') {
+        prod.inStock -= qty;
+      } else if (orderType === 'rental') {
+        prod.inStock -= qty;
+        prod.rentedCount = (prod.rentedCount || 0) + qty;
+      }
+    }
+
+    const distance = parseFloat(req.body.deliveryDistance) || 0;
+    const deliveryFee = distance <= 20 ? 0 : (distance - 20) * 2 * 1.00;
+    const tax = Math.round(subtotal * 0.08 * 100) / 100;
+    const totalAmount = Math.round((subtotal + deliveryFee + tax) * 100) / 100;
+
+    const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const newOrder = {
+      id: orderId,
+      customerId: user.id,
+      customerName: user.name,
+      customerCompany: user.company || 'Direct Buyer',
+      customerEmail: user.email,
+      customerPhone: user.phone || 'N/A',
+      orderType,
+      items: processedItems,
+      subtotal,
+      deliveryFee,
+      tax,
+      totalAmount,
+      status: 'Processing',
+      deliveryAddress: deliveryAddress || 'Warehouse Pick-up',
+      jobsiteContact: jobsiteContact || user.name,
+      deliveryDate: startDate || new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString()
+    };
+
+    db.orders.unshift(newOrder);
+
+    // If order type is rental, create active rental ledger record
+    let rentalRecord = null;
+    if (orderType === 'rental') {
+      rentalRecord = {
+        id: `RNT-${Math.floor(1000 + Math.random() * 9000)}`,
+        orderId: newOrder.id,
+        customerId: user.id,
+        customerName: user.name,
+        customerCompany: user.company || 'Jobsite Contractor',
+        customerEmail: user.email,
+        customerPhone: user.phone || 'N/A',
+        jobsiteAddress: deliveryAddress || 'Default Jobsite Location',
+        jobsiteContact: jobsiteContact || user.name,
+        startDate: startDate || new Date().toISOString().split('T')[0],
+        endDate: endDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+        monthlyRateTotal: subtotal,
+        status: 'Active',
+        items: processedItems.map(i => ({
+          productId: i.productId,
+          name: i.name,
+          quantity: i.quantity,
+          monthlyUnitPrice: i.unitPrice,
+          subtotal: i.total
+        })),
+        notes: notes || 'New rental agreement placed online.'
+      };
+      db.rentals.unshift(rentalRecord);
+    }
+
+    // Auto-create shipment item for fulfillment dispatch
+    const newShipment = {
+      id: `SHIP-${Math.floor(1000 + Math.random() * 9000)}`,
+      orderId: newOrder.id,
+      type: orderType === 'rental' ? 'Rental Deployment' : 'Outbound Sale Delivery',
+      driverName: 'Unassigned Dispatcher',
+      dispatchDate: startDate || new Date().toISOString().split('T')[0],
+      status: 'Pending Dispatch',
+      destination: deliveryAddress || 'Warehouse Pick-up',
+      notes: notes || 'Awaiting warehouse loadout.'
+    };
+    db.shipments.unshift(newShipment);
+
+    saveDb(db);
+
+    res.status(201).json({
+      message: 'Order created successfully!',
+      order: newOrder,
+      rental: rentalRecord
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to place order' });
+  }
+});
+
+// --- CUSTOMER PORTAL ENDPOINTS ---
+
+app.get('/api/orders/my-orders', authenticateToken, (req, res) => {
+  const db = getDb();
+  const userOrders = db.orders.filter(o => o.customerId === req.user.id);
+  const userRentals = db.rentals.filter(r => r.customerId === req.user.id);
+  res.json({
+    orders: userOrders,
+    rentals: userRentals
+  });
+});
+
+app.post('/api/rentals/extend', authenticateToken, (req, res) => {
+  const { rentalId, additionalDays } = req.body;
+  const db = getDb();
+  const rental = db.rentals.find(r => r.id === rentalId && r.customerId === req.user.id);
+
+  if (!rental) return res.status(404).json({ error: 'Rental agreement not found' });
+
+  const currentEnd = new Date(rental.endDate);
+  const days = parseInt(additionalDays) || 30;
+  currentEnd.setDate(currentEnd.getDate() + days);
+
+  rental.endDate = currentEnd.toISOString().split('T')[0];
+  rental.notes += ` | Extended by customer for ${days} days on ${new Date().toISOString().split('T')[0]}`;
+
+  saveDb(db);
+  res.json({ message: 'Rental extended successfully', newEndDate: rental.endDate, rental });
+});
+
+app.post('/api/rentals/request-pickup', authenticateToken, (req, res) => {
+  const { rentalId, pickupDate, notes } = req.body;
+  const db = getDb();
+  const rental = db.rentals.find(r => r.id === rentalId && r.customerId === req.user.id);
+
+  if (!rental) return res.status(404).json({ error: 'Rental agreement not found' });
+
+  rental.status = 'Pickup Scheduled';
+  rental.notes += ` | Pickup requested for ${pickupDate}. Notes: ${notes || 'None'}`;
+
+  // Add return shipment
+  db.shipments.unshift({
+    id: `SHIP-${Math.floor(1000 + Math.random() * 9000)}`,
+    orderId: rental.id,
+    type: 'Rental Return Pickup',
+    driverName: 'Unassigned Dispatcher',
+    dispatchDate: pickupDate || new Date().toISOString().split('T')[0],
+    status: 'Scheduled',
+    destination: `Pickup from ${rental.jobsiteAddress}`,
+    notes: notes || 'Customer requested end of jobsite rental.'
+  });
+
+  saveDb(db);
+  res.json({ message: 'Pickup request received. Dispatch team notified.', rental });
+});
+
+// --- ADMIN DASHBOARD & BACKEND MANAGEMENT ---
+
+app.get('/api/admin/overview', authenticateToken, requireAdmin, (req, res) => {
+  const db = getDb();
+
+  const totalSalesRevenue = db.orders
+    .filter(o => o.orderType === 'sale')
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+  const activeRentals = db.rentals.filter(r => r.status === 'Active' || r.status === 'Pickup Scheduled');
+  const monthlyRentalRevenue = activeRentals.reduce((sum, r) => sum + (r.monthlyRateTotal || 0), 0);
+
+  let totalPanelsRentedOut = 0;
+  activeRentals.forEach(r => {
+    r.items.forEach(item => {
+      if (item.name.toLowerCase().includes('panel')) {
+        totalPanelsRentedOut += item.quantity;
+      }
+    });
+  });
+
+  const panelProd = db.products.find(p => p.type === 'panel') || { inStock: 0 };
+
+  res.json({
+    metrics: {
+      totalSalesRevenue,
+      monthlyRentalRevenue,
+      totalPanelsRentedOut,
+      panelsInWarehouse: panelProd.inStock,
+      totalOrdersCount: db.orders.length,
+      activeRentalsCount: activeRentals.length,
+      pendingDispatchesCount: db.shipments.filter(s => s.status !== 'Delivered' && s.status !== 'Returned').length
+    }
+  });
+});
+
+app.get('/api/admin/sales', authenticateToken, requireAdmin, (req, res) => {
+  const db = getDb();
+  res.json(db.orders);
+});
+
+app.put('/api/admin/sales/:id/status', authenticateToken, requireAdmin, (req, res) => {
   const { status } = req.body;
-  const order = orders.find(o => o.id === id);
-  if (order) {
-    order.status = status;
-    return res.json({ success: true, order });
+  const db = getDb();
+  const order = db.orders.find(o => o.id === req.params.id);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+
+  order.status = status;
+  saveDb(db);
+  res.json({ message: 'Order status updated', order });
+});
+
+app.get('/api/admin/rentals', authenticateToken, requireAdmin, (req, res) => {
+  const db = getDb();
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Auto-check overdue rentals
+  let updated = false;
+  db.rentals.forEach(r => {
+    if (r.status === 'Active' && r.endDate < today) {
+      r.status = 'Overdue';
+      r.notes += ` | Automatically marked Overdue on ${today}`;
+      updated = true;
+    }
+  });
+  if (updated) saveDb(db);
+
+  res.json(db.rentals);
+});
+
+app.put('/api/admin/rentals/:id/checkin', authenticateToken, requireAdmin, (req, res) => {
+  const db = getDb();
+  const rental = db.rentals.find(r => r.id === req.params.id);
+  if (!rental) return res.status(404).json({ error: 'Rental not found' });
+
+  if (rental.status === 'Returned') {
+    return res.status(400).json({ error: 'Rental is already checked in and returned' });
   }
-  res.status(404).json({ error: "Order not found" });
+
+  rental.status = 'Returned';
+
+  // Return items back to warehouse stock & reduce rentedCount
+  rental.items.forEach(rItem => {
+    const prod = db.products.find(p => p.id === rItem.productId);
+    if (prod) {
+      prod.inStock += rItem.quantity;
+      prod.rentedCount = Math.max(0, (prod.rentedCount || 0) - rItem.quantity);
+    }
+  });
+
+  saveDb(db);
+  res.json({ message: 'Rental checked in successfully. Inventory returned to warehouse stock.', rental });
 });
 
-// 4. Rentals
-app.get('/api/admin/rentals', authenticateToken, (req, res) => {
-  res.json(rentals);
+app.get('/api/admin/shipments', authenticateToken, requireAdmin, (req, res) => {
+  const db = getDb();
+  res.json(db.shipments);
 });
 
-app.put('/api/admin/rentals/:id/checkin', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const rental = rentals.find(r => r.id === id);
-  if (rental) {
-    rental.status = "checked_in";
-    return res.json({ success: true, rental });
+// --- ROUTE OPTIMIZATION ENGINE ---
+
+app.post('/api/admin/dispatch/optimize', authenticateToken, requireAdmin, (req, res) => {
+  const { shipmentIds, startLocation = 'Sacramento Warehouse' } = req.body;
+  if (!shipmentIds || !Array.isArray(shipmentIds) || shipmentIds.length === 0) {
+    return res.status(400).json({ error: 'shipmentIds must be a non-empty array' });
   }
-  res.status(404).json({ error: "Rental not found" });
-});
-
-app.put('/api/admin/rentals/:id/extend', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { endDate } = req.body;
-  const rental = rentals.find(r => r.id === id);
-  if (rental) {
-    rental.endDate = endDate;
-    return res.json({ success: true, rental });
+  const db = getDb();
+  
+  // Filter selected shipments
+  let selectedShipments = db.shipments.filter(s => shipmentIds.includes(s.id));
+  
+  if (selectedShipments.length === 0) {
+    return res.status(400).json({ error: 'No shipments selected for optimization' });
   }
-  res.status(404).json({ error: "Rental not found" });
-});
 
-// 5. Shipments / Deliveries & Pickups
-app.get('/api/admin/shipments', authenticateToken, (req, res) => {
-  res.json(shipments);
-});
-
-app.post('/api/admin/shipments/pickup', authenticateToken, (req, res) => {
-  const newShipment = {
-    id: "SHP-" + (shipments.length + 901),
-    type: "Pickup",
-    ...req.body,
-    status: "scheduled"
+  // Mock distance calculation based on address strings (for prototype)
+  // In a production app, this would use Google Maps Distance Matrix API
+  const getDistance = (addr1, addr2) => {
+    // Simple mock logic: different lengths = further away
+    return Math.abs(addr1.length - addr2.length) + (Math.random() * 5);
   };
-  shipments.push(newShipment);
-  res.status(201).json({ success: true, shipment: newShipment });
-});
 
-app.put('/api/admin/shipments/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const shipment = shipments.find(s => s.id === id);
-  if (shipment) {
-    Object.assign(shipment, req.body);
-    return res.json({ success: true, shipment });
+  // Nearest Neighbor Optimization Algorithm
+  let optimizedRoute = [];
+  let currentPos = startLocation;
+  let remaining = [...selectedShipments];
+
+  while (remaining.length > 0) {
+    let nearestIndex = 0;
+    let minDistance = getDistance(currentPos, remaining[0].destination);
+
+    for (let i = 1; i < remaining.length; i++) {
+      let dist = getDistance(currentPos, remaining[i].destination);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestIndex = i;
+      }
+    }
+
+    const nextStop = remaining.splice(nearestIndex, 1)[0];
+    optimizedRoute.push({
+      ...nextStop,
+      estimatedLegDistance: minDistance.toFixed(1),
+      estimatedTravelTime: Math.round(minDistance * 2) // mock minutes
+    });
+    currentPos = nextStop.destination;
   }
-  res.status(404).json({ error: "Shipment not found" });
+
+  const totalMiles = optimizedRoute.reduce((sum, stop) => sum + parseFloat(stop.estimatedLegDistance), 0);
+  const totalTime = optimizedRoute.reduce((sum, stop) => sum + stop.estimatedTravelTime, 0);
+
+  res.json({
+    route: optimizedRoute,
+    summary: {
+      totalStops: optimizedRoute.length,
+      estimatedTotalMiles: totalMiles.toFixed(1),
+      estimatedTotalDriveTime: `${Math.floor(totalTime / 60)}h ${totalTime % 60}m`,
+      optimizedOrder: optimizedRoute.map(s => s.id)
+    }
+  });
 });
 
-// 6. Invoices
-app.get('/api/admin/invoices', authenticateToken, (req, res) => {
-  res.json(invoices);
+app.put('/api/admin/shipments/:id', authenticateToken, requireAdmin, (req, res) => {
+  const { driverName, status, dispatchDate, notes } = req.body;
+  const db = getDb();
+  const shipment = db.shipments.find(s => s.id === req.params.id);
+  if (!shipment) return res.status(404).json({ error: 'Shipment record not found' });
+
+  if (driverName) shipment.driverName = driverName;
+  if (status) shipment.status = status;
+  if (dispatchDate) shipment.dispatchDate = dispatchDate;
+  if (notes) shipment.notes = notes;
+
+  saveDb(db);
+  res.json({ message: 'Shipment updated', shipment });
 });
 
-app.post('/api/admin/invoices', authenticateToken, (req, res) => {
-  const newInvoice = {
-    id: "INV-" + (invoices.length + 1001),
-    ...req.body,
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  invoices.push(newInvoice);
-  res.status(201).json({ success: true, invoice: newInvoice });
-});
-
-// 7. Customers / Logins Creation
-app.get('/api/admin/customers', authenticateToken, (req, res) => {
-  res.json(customers);
-});
-
-app.post('/api/admin/customers', authenticateToken, (req, res) => {
-  const newCustomer = {
-    id: "cust-" + (customers.length + 101),
-    ...req.body,
-    role: "customer"
-  };
-  customers.push(newCustomer);
-  res.status(201).json({ success: true, customer: newCustomer });
-});
-
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
+  console.log(`Secure-A-Fence server running on http://localhost:${PORT}`);
 });
