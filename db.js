@@ -37,7 +37,7 @@ const initialData = {
       inStock: 300,
       rentedCount: 90,
       description: "Heavy-duty 11-gauge galvanized chain-link mesh with sturdy welded tubular steel frame (6ft x 12ft). Fully refurbished and cross-braced.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Dimensions: 6 ft High x 12 ft Wide | Frame: 1-3/8\" OD Steel | Mesh: 2-3/8\" Galvanized"
     },
     {
@@ -50,7 +50,7 @@ const initialData = {
       inStock: 250,
       rentedCount: 60,
       description: "Standard 6ft x 10ft refurbished temporary chain-link fence panel. Ideal for tighter perimeters and flexible jobsite layouts.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Dimensions: 6 ft High x 10 ft Wide | Frame: 1-3/8\" OD Steel | Mesh: 2-3/8\" Galvanized"
     },
     {
@@ -63,7 +63,7 @@ const initialData = {
       inStock: 600,
       rentedCount: 130,
       description: "Lightweight and easy to handle rectangular tubular steel base with dual upright sleeves. Designed for standard hard asphalt and concrete perimeters.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Style: Flat Stand | Dimensions: 36\" x 16\" | Weight: 24 lbs | Finish: Hot-Dip Galvanized"
     },
     {
@@ -76,7 +76,7 @@ const initialData = {
       inStock: 350,
       rentedCount: 85,
       description: "Includes angular diagonal steel bracing for high wind resistance and extra lateral support on open job sites.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Style: Braced Stand | Feature: Dual Diagonal Support Struts | Weight: 32 lbs | Finish: Hot-Dip Galvanized"
     },
     {
@@ -89,7 +89,7 @@ const initialData = {
       inStock: 280,
       rentedCount: 70,
       description: "Built with reinforced dual cross-member grid tubes for maximum structural strength, long perimeter runs, and heavy traffic zones.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Style: Heavy Duty Stand | Feature: Quad Cross-Bar Construction | Weight: 38 lbs | Finish: Hot-Dip Galvanized"
     },
     {
@@ -102,7 +102,7 @@ const initialData = {
       inStock: 400,
       rentedCount: 95,
       description: "4-point wide footprint cross-pipe configuration ideal for dirt, gravel, turf, and soft uneven ground surfaces.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Style: Cross Stand | Feature: 4-Way Surface Spanning Arms | Weight: 26 lbs | Finish: Hot-Dip Galvanized"
     },
     {
@@ -115,7 +115,7 @@ const initialData = {
       inStock: 320,
       rentedCount: 50,
       description: "Solid smooth steel plate base offering a flush, low-profile footprint to prevent tripping hazards on pedestrian walkways.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Style: Plate Stand | Feature: Flush Beveled Steel Plate | Weight: 30 lbs | Finish: Hot-Dip Galvanized"
     },
     {
@@ -128,7 +128,7 @@ const initialData = {
       inStock: 150,
       rentedCount: 40,
       description: "Equipped with heavy-duty locking swivel caster wheels for quick gate opening, repositioning, and mobile perimeter access points.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Style: Wheel Stand | Feature: 4 Heavy-Duty Locking Casters | Weight: 34 lbs | Finish: Hot-Dip Galvanized"
     },
     {
@@ -141,7 +141,7 @@ const initialData = {
       inStock: 220,
       rentedCount: 60,
       description: "Flat tubular steel frame base equipped with dual heavy-gauge canvas sandbags for extra stability against high winds and storms.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Style: Sandbag Stand | Feature: Frame + 2 Pre-filled 50lb Sandbags | Total Weight: 124 lbs | Finish: Galvanized Steel"
     },
     {
@@ -154,7 +154,7 @@ const initialData = {
       inStock: 1200,
       rentedCount: 260,
       description: "High-tensile steel coupler clamp used to join adjacent fence panels together securely at top and mid rail.",
-      image: "/assets/clip.svg",
+      image: "/assets/clip.webp",
       specs: "Material: Forged Steel | Bolt: 1/2\" Galvanized Carriage Bolt included"
     },
     {
@@ -167,7 +167,7 @@ const initialData = {
       inStock: 80,
       rentedCount: 15,
       description: "High-density polyethylene knitted fabric providing 88% visual blockage and wind resistance for site privacy.",
-      image: "/assets/privacy_screen.svg",
+      image: "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80",
       specs: "Length: 50 ft | Height: 5'8\" | Brass Grommets every 24\""
     },
     {
@@ -180,7 +180,7 @@ const initialData = {
       inStock: 50,
       rentedCount: 12,
       description: "Custom pre-installed 3ft wide pedestrian pass-through door with secure hinges and quick-latch built directly into a standard temporary fence panel.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Door Width: 3 ft | Frame: 1-3/8\" Galvanized | Includes: Gravity Latch & Heavy-Duty Frame Hinges"
     },
     {
@@ -193,7 +193,7 @@ const initialData = {
       inStock: 30,
       rentedCount: 8,
       description: "Full-width single swing vehicle gate conversion of a standard panel. Enables single-panel vehicle access on any perimeter run.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Gate Width: 10 ft or 12 ft options | Includes: Swing Hinges & Heavy-Duty Latch"
     },
     {
@@ -206,7 +206,7 @@ const initialData = {
       inStock: 20,
       rentedCount: 5,
       description: "Custom double-swing dual panel vehicle gate set providing a wider 20ft to 24ft entry point for heavy trucks, cranes, and delivery logistics.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Gate Width: 20 ft to 24 ft Total | Includes: Pair of Swing Hinges, Latch, & Locking Drop Rod"
     },
     {
@@ -219,7 +219,7 @@ const initialData = {
       inStock: 150,
       rentedCount: 45,
       description: "Heavy-duty locking padlock receiver latch for temporary fence gates to secure jobsites after hours.",
-      image: "/assets/clip.svg",
+      image: "/assets/clip.webp",
       specs: "Material: Hot-Dip Galvanized Forged Steel | Padlock Hole: 1/2\" diameter"
     },
     {
@@ -232,7 +232,7 @@ const initialData = {
       inStock: 100,
       rentedCount: 30,
       description: "Heavy vertical drop-rod pin assembly used to anchor double swing gates firmly into concrete, asphalt, or dirt.",
-      image: "/assets/clip.svg",
+      image: "/assets/clip.webp",
       specs: "Rod Length: 24\" | Rod Diameter: 5/8\" Galvanized Solid Steel"
     },
     {
@@ -245,7 +245,7 @@ const initialData = {
       inStock: 80,
       rentedCount: 15,
       description: "Spring-loaded clamp-on support caster wheel designed to roll smoothly on asphalt or gravel while supporting the weight of custom swing gates.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Wheel Diameter: 6\" | Tyre: Solid Hard Rubber | Load Rating: 250 lbs"
     },
     {
@@ -258,7 +258,7 @@ const initialData = {
       inStock: 50,
       rentedCount: 12,
       description: "Custom pre-installed 3ft wide pedestrian pass-through door with secure hinges and quick-latch built directly into a standard temporary fence panel.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Door Width: 3 ft | Frame: 1-3/8\" Galvanized | Includes: Gravity Latch & Heavy-Duty Frame Hinges"
     },
     {
@@ -271,7 +271,7 @@ const initialData = {
       inStock: 30,
       rentedCount: 8,
       description: "Full-width single swing vehicle gate conversion of a standard panel. Enables single-panel vehicle access on any perimeter run.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Gate Width: 10 ft or 12 ft options | Includes: Swing Hinges & Heavy-Duty Latch"
     },
     {
@@ -284,7 +284,7 @@ const initialData = {
       inStock: 20,
       rentedCount: 5,
       description: "Custom double-swing dual panel vehicle gate set providing a wider 20ft to 24ft entry point for heavy trucks, cranes, and delivery logistics.",
-      image: "/assets/panel.svg",
+      image: "/assets/panel.png",
       specs: "Gate Width: 20 ft to 24 ft Total | Includes: Pair of Swing Hinges, Latch, & Locking Drop Rod"
     },
     {
@@ -297,7 +297,7 @@ const initialData = {
       inStock: 150,
       rentedCount: 45,
       description: "Heavy-duty locking padlock receiver latch for temporary fence gates to secure jobsites after hours.",
-      image: "/assets/clip.svg",
+      image: "/assets/clip.webp",
       specs: "Material: Hot-Dip Galvanized Forged Steel | Padlock Hole: 1/2\" diameter"
     },
     {
@@ -310,7 +310,7 @@ const initialData = {
       inStock: 100,
       rentedCount: 30,
       description: "Heavy vertical drop-rod pin assembly used to anchor double swing gates firmly into concrete, asphalt, or dirt.",
-      image: "/assets/clip.svg",
+      image: "/assets/clip.webp",
       specs: "Rod Length: 24\" | Rod Diameter: 5/8\" Galvanized Solid Steel"
     },
     {
@@ -323,7 +323,7 @@ const initialData = {
       inStock: 80,
       rentedCount: 15,
       description: "Spring-loaded clamp-on support caster wheel designed to roll smoothly on asphalt or gravel while supporting the weight of custom swing gates.",
-      image: "/assets/stand.svg",
+      image: "/assets/stand.png",
       specs: "Wheel Diameter: 6\" | Tyre: Solid Hard Rubber | Load Rating: 250 lbs"
     }
   ],
