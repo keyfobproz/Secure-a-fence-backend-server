@@ -1,17 +1,20 @@
 {
-  "name": "secure-a-fence-backend-server",
+  "name": "secure-a-fence",
   "version": "1.0.0",
-  "description": "Backend API for Secure A Fence Administrator",
+  "description": "",
   "main": "server.js",
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "scripts": {
-    "start": "node server.js"
+    "test": "node --test tests/api.test.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "@supabase/supabase-js": "^2.39.0"
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0"
   }
 }
