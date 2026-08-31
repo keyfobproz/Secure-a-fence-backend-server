@@ -18,11 +18,11 @@ const authenticateToken = (req, res, next) => {
   next();
 };
 
-// 1. Auth Login (Mocked for now - admin account check)
+// 1. Auth Login
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
-  if (data && password === 'password123') { // Simple password check
+  if (data && password === 'password123') {
     return res.json({ token: "demo_token", user: data });
   }
   res.status(401).json({ error: "Invalid credentials" });
@@ -58,13 +58,31 @@ app.post('/api/admin/sales', authenticateToken, async (req, res) => {
   res.status(201).json({ success: !error, order: data });
 });
 
+app.put('/api/admin/sales/:id/status', authenticateToken, async (req, res) => {
+  const { status } = req.body;
+  const { data, error } = await supabase.from('orders').update({ status }).eq('id', req.params.id);
+  res.json({ success: !error, order: data });
+});
+
+app.put('/api/admin/sales/:id/payment', authenticateToken, async (req, res) => {
+  const { paymentStatus, paymentMethod } = req.body;
+  const { data, error } = await supabase.from('orders').update({ paymentStatus, paymentMethod }).eq('id', req.params.id);
+  res.json({ success: !error, order: data });
+});
+
 // 4. Rentals
 app.get('/api/admin/rentals', authenticateToken, async (req, res) => {
   const { data } = await supabase.from('rentals').select('*');
   res.json(data);
 });
 
-// 5. Shipments / Pickups
+app.put('/api/admin/rentals/:id/extend', authenticateToken, async (req, res) => {
+  const { endDate } = req.body;
+  const { data, error } = await supabase.from('rentals').update({ endDate }).eq('id', req.params.id);
+  res.json({ success: !error, rental: data });
+});
+
+// 5. Shipments
 app.get('/api/admin/shipments', authenticateToken, async (req, res) => {
   const { data } = await supabase.from('shipments').select('*');
   res.json(data);
@@ -74,6 +92,11 @@ app.get('/api/admin/shipments', authenticateToken, async (req, res) => {
 app.get('/api/admin/invoices', authenticateToken, async (req, res) => {
   const { data } = await supabase.from('invoices').select('*');
   res.json(data);
+});
+
+app.post('/api/admin/invoices', authenticateToken, async (req, res) => {
+  const { data, error } = await supabase.from('invoices').insert([req.body]);
+  res.status(201).json({ success: !error, invoice: data });
 });
 
 // 7. Customers
