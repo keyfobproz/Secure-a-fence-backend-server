@@ -43,7 +43,9 @@ create table if not exists public.orders (
   "deliveryAddress" text,
   "jobsiteContact" text,
   "deliveryDate" text,
-  "createdAt" text
+  "createdAt" text,
+  "paymentStatus" text not null default 'Unpaid',
+  "paymentMethod" text not null default 'None'
 );
 
 -- 4. Rentals Table
@@ -54,7 +56,6 @@ create table if not exists public.rentals (
   "customerName" text not null,
   "customerCompany" text,
   "customerEmail" text not null,
-  "customerPhone" text,
   "customerPhone" text,
   "jobsiteAddress" text,
   "jobsiteContact" text,
@@ -77,3 +78,17 @@ create table if not exists public.shipments (
   destination text,
   notes text
 );
+
+-- 6. Invoices Table
+create table if not exists public.invoices (
+  id text primary key,
+  "orderId" text not null,
+  "customerName" text not null,
+  amount numeric not null default 0,
+  status text not null default 'Unpaid',
+  "createdAt" text
+);
+
+-- 7. Add missing columns to existing orders table (if previously created)
+alter table public.orders add column if not exists "paymentStatus" text not null default 'Unpaid';
+alter table public.orders add column if not exists "paymentMethod" text not null default 'None';
