@@ -471,6 +471,18 @@ app.put('/api/admin/sales/:id/status', authenticateToken, requireAdmin, (req, re
   res.json({ message: 'Order status updated', order });
 });
 
+app.put('/api/admin/sales/:id/payment', authenticateToken, requireAdmin, (req, res) => {
+  const { paymentStatus, paymentMethod } = req.body;
+  const db = getDb();
+  const order = db.orders.find(o => o.id === req.params.id);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+
+  order.paymentStatus = paymentStatus;
+  order.paymentMethod = paymentMethod;
+  saveDb(db);
+  res.json({ message: 'Payment status updated', order });
+});
+
 app.get('/api/admin/rentals', authenticateToken, requireAdmin, (req, res) => {
   const db = getDb();
   const today = new Date().toISOString().split('T')[0];
